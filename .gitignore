@@ -1,0 +1,7 @@
+/.idea/
+docs/
+/.vscode/
+.DS_Store
+aisdk llm.txt
+/app/node_modules/
+/server/node_modules/

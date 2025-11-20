@@ -1,4 +1,4 @@
-import type React from "react";
+import React, { forwardRef, useEffect, useState, useCallback } from "react";
 import {
   View,
   type TextInput,
@@ -9,8 +9,8 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { ArrowUp, X } from "lucide-react-native";
-import { Button } from "./button";
+import { ArrowUp, X, Mic } from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 import Animated, {
   useAnimatedStyle,
   useAnimatedKeyboard,
@@ -22,7 +22,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChatTextInput } from "./chat-text-input";
-import { forwardRef, useEffect, useState } from "react";
 import { Image } from "expo-image";
 import { useStore } from "@/lib/globalStore";
 
@@ -32,6 +31,7 @@ type Props = {
   onSubmit: () => void;
   scrollViewRef: React.RefObject<ScrollView>;
   focusOnMount?: boolean;
+  onVoicePress?: () => void;
 };
 
 interface SelectedImagesProps {
@@ -44,8 +44,16 @@ interface ImageItemProps {
   onRemove: (uri: string) => void;
 }
 
-const ImageItem = ({ uri, onRemove }: ImageItemProps) => {
+const ImageItemComponent = ({ uri, onRemove }: ImageItemProps) => {
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleRemove = useCallback(() => {
+    onRemove(uri);
+  }, [uri, onRemove]);
+
+  const handleLoadEnd = useCallback(() => {
+    setTimeout(() => setIsLoading(false), 2000);
+  }, []);
 
   return (
     <Animated.View
@@ -67,11 +75,11 @@ const ImageItem = ({ uri, onRemove }: ImageItemProps) => {
             borderRadius: 6,
           }}
           contentFit="cover"
-          onLoadEnd={() => setTimeout(() => setIsLoading(false), 2000)}
+          onLoadEnd={handleLoadEnd}
         />
       </View>
       <Pressable
-        onPress={() => onRemove(uri)}
+        onPress={handleRemove}
         className="absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full bg-gray-200"
       >
         <X size={12} color="black" />
@@ -79,8 +87,10 @@ const ImageItem = ({ uri, onRemove }: ImageItemProps) => {
     </Animated.View>
   );
 };
+ImageItemComponent.displayName = "ImageItem";
+const ImageItem = React.memo(ImageItemComponent);
 
-const SelectedImages = ({ uris, onRemove }: SelectedImagesProps) => {
+const SelectedImagesComponent = ({ uris, onRemove }: SelectedImagesProps) => {
   const animatedStyle = useAnimatedStyle(() => {
     return {
       height: withTiming(uris.length === 0 ? 0 : 65, {
@@ -113,10 +123,12 @@ const SelectedImages = ({ uris, onRemove }: SelectedImagesProps) => {
     </Animated.View>
   );
 };
+SelectedImagesComponent.displayName = "SelectedImages";
+const SelectedImages = React.memo(SelectedImagesComponent);
 
-export const ChatInput = forwardRef<TextInput, Props>(
+const ChatInputComponent = forwardRef<TextInput, Props>(
   (
-    { input, onChangeText, onSubmit, scrollViewRef, focusOnMount = false },
+    { input, onChangeText, onSubmit, scrollViewRef, focusOnMount = false, onVoicePress },
     ref,
   ) => {
     const { bottom } = useSafeAreaInsets();
@@ -157,6 +169,18 @@ export const ChatInput = forwardRef<TextInput, Props>(
 
     const colorScheme = useColorScheme();
 
+    const handleVoicePressInternal = useCallback(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Keyboard.dismiss();
+      onVoicePress?.();
+    }, [onVoicePress]);
+
+    const handleSubmitInternal = useCallback(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onSubmit();
+      Keyboard.dismiss();
+    }, [onSubmit]);
+
     return (
       <KeyboardAvoidingView>
         <Animated.View style={animatedStyles}>
@@ -170,20 +194,31 @@ export const ChatInput = forwardRef<TextInput, Props>(
               value={input}
               onChangeText={onChangeText}
             />
-            <Button
-              size="icon"
-              className="android:h-12 android:w-12 rounded-full bg-black dark:bg-white"
-              onPress={() => {
-                onSubmit();
-                Keyboard.dismiss();
-              }}
+            {onVoicePress && (
+              <Pressable
+                onPress={handleVoicePressInternal}
+                className="android:h-12 android:w-12 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center active:opacity-70"
+              >
+                <Mic
+                  color={colorScheme === "dark" ? "white" : "black"}
+                  size={20}
+                />
+              </Pressable>
+            )}
+            <Pressable
+              onPress={handleSubmitInternal}
+              disabled={!input.trim()}
+              className={`android:h-12 android:w-12 h-10 w-10 rounded-full items-center justify-center active:opacity-80 ${
+                input.trim() 
+                  ? 'bg-black dark:bg-white' 
+                  : 'bg-gray-300 dark:bg-gray-600 opacity-50'
+              }`}
             >
               <ArrowUp
                 color={colorScheme === "dark" ? "black" : "white"}
                 size={20}
-                className="h-6 w-6"
               />
-            </Button>
+            </Pressable>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -191,4 +226,6 @@ export const ChatInput = forwardRef<TextInput, Props>(
   },
 );
 
-ChatInput.displayName = "ChatInput";
+ChatInputComponent.displayName = "ChatInput";
+
+export const ChatInput = React.memo(ChatInputComponent);

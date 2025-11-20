@@ -1,3 +1,4 @@
+import React from "react";
 import Markdown from "react-native-markdown-display";
 import {
   H1 as ExpoH1,
@@ -92,6 +93,6 @@ const rules = {
   },
 };
 
-export function CustomMarkdown({ content }) {
+export const CustomMarkdown = React.memo(({ content }: { content: string }) => {
   return <Markdown rules={rules}>{content}</Markdown>;
-}
+});

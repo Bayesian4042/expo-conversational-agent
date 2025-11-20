@@ -1,7 +1,7 @@
 import { View, Pressable, Linking } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "@/components/ui/text";
-import { MessageCircle } from "@/lib/icons";
+import { MessageCircle } from "lucide-react-native";
 
 export const WelcomeMessage = () => {
   return (

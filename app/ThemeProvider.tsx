@@ -11,8 +11,8 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as React from "react";
 import { Platform } from "react-native";
-import { NAV_THEME } from "@/lib/constants";
-import { useColorScheme } from "@/lib/useColorScheme";
+import { NAV_THEME } from "@/lib/theme";
+import { useColorScheme } from "nativewind";
 // import { PortalHost } from "@rn-primitives/portal";
 // import { ThemeToggle } from "@/components/ThemeToggle";
 // import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
@@ -39,8 +39,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { colorScheme, setColorScheme, isDarkColorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
   const [isColorSchemeLoaded, setIsColorSchemeLoaded] = React.useState(false);
+  const isDarkColorScheme = colorScheme === "dark";
 
   React.useEffect(() => {
     (async () => {

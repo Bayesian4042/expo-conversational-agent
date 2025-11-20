@@ -1,4 +1,4 @@
-import { View, ScrollView, ActivityIndicator } from "react-native";
+import { View, ScrollView, ActivityIndicator, type NativeSyntheticEvent, type NativeScrollEvent } from "react-native";
 
 // import Markdown from "react-native-markdown-display";
 import { CustomMarkdown } from "@/components/ui/markdown";
@@ -27,14 +27,22 @@ type ChatInterfaceProps = {
   messages: Message[];
   scrollViewRef: React.RefObject<ScrollView>;
   isLoading?: boolean;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  onContentSizeChange?: (w: number, h: number) => void;
 };
 
-export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
-  ({ messages, scrollViewRef, isLoading }, ref) => {
+const ChatInterfaceComponent = forwardRef<ScrollView, ChatInterfaceProps>(
+  ({ messages, scrollViewRef, isLoading, onScroll, onContentSizeChange }, ref) => {
 
     return (  
       <View className="flex-1">
-        <ScrollView ref={ref} className="flex-1 space-y-4 p-4">
+        <ScrollView 
+          ref={scrollViewRef} 
+          className="flex-1 space-y-4 p-4"
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          onContentSizeChange={onContentSizeChange}
+        >
           {!messages.length && <WelcomeMessage />}
           {messages.length > 0
             ? messages.map((m, index) => (
@@ -115,4 +123,6 @@ export const ChatInterface = forwardRef<ScrollView, ChatInterfaceProps>(
   },
 );
 
-ChatInterface.displayName = "ChatInterface";
+ChatInterfaceComponent.displayName = "ChatInterface";
+
+export const ChatInterface = React.memo(ChatInterfaceComponent);

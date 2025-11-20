@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Wind, Droplets, Sun, Cloud } from "@/lib/icons";
+import { Wind, Droplets, Sun, Cloud } from "lucide-react-native";
 
 interface WeatherCardProps {
   city: string;

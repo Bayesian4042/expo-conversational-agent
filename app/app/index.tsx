@@ -1,7 +1,6 @@
 import { generateUUID } from "@/lib/utils";
-import { Stack } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Pressable, type TextInput, ScrollView, Text } from "react-native";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { type TextInput, ScrollView, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetch as expoFetch } from 'expo/fetch';
 import { useChat } from "@ai-sdk/react";
@@ -11,43 +10,91 @@ import { DefaultChatTransport } from 'ai';
 import Animated, { FadeIn } from "react-native-reanimated";
 import { ChatInterface } from "@/components/chat-interface";
 import { ChatInput } from "@/components/ui/chat-input";
+import { ElevenLabsProvider } from "@elevenlabs/react-native";
+import { VoiceModal } from "@/components/voice-modal";
 
 const HomePage = () => {
   const {
     clearImageUris,
-    setBottomChatHeightHandler,
     chatId,
     setChatId,
   } = useStore();
   const inputRef = useRef<TextInput>(null);
   const [input, setInput] = useState('');
+  const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(false);
+  const scrollViewRef = useRef<GHScrollView>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { bottom } = useSafeAreaInsets();
 
-  // Initialize chatId if not set
   useEffect(() => {
     if (!chatId) {
       setChatId({ id: generateUUID(), from: "newChat" });
     }
   }, [chatId, setChatId]);
 
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const transport = useMemo(() => new DefaultChatTransport({
+    fetch: expoFetch as unknown as typeof globalThis.fetch,
+    api: `http://localhost:3001/api/text-agent/`,
+  }), []);
+
+  const handleFinish = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+      scrollTimeoutRef.current = null;
+    }, 100);
+  }, []);
+
+  const handleError = useCallback((error: Error) => {
+    console.log(">> error is", error.message);
+  }, []);
+
   const {
     messages,
     error,
     sendMessage
   } = useChat({
-    transport: new DefaultChatTransport({
-      fetch: expoFetch as unknown as typeof globalThis.fetch,
-      api: `http://localhost:3000/api/chat`,
-    }),
-    onFinish: () => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    },
-    onError(error) {
-      console.log(">> error is", error.message);
-    },
+    transport,
+    onFinish: handleFinish,
+    onError: handleError,
   });
 
-  const { bottom } = useSafeAreaInsets();
-  const scrollViewRef = useRef<GHScrollView>(null);
+  const handleSubmit = useCallback(() => {
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+      clearImageUris();
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [input, sendMessage, clearImageUris]);
+
+  const handleVoicePress = useCallback(() => {
+    setIsVoiceModalVisible(true);
+  }, []);
+
+  const handleVoiceClose = useCallback(() => {
+    setIsVoiceModalVisible(false);
+  }, []);
+
+  const transformedMessages = useMemo(() => 
+    messages.map((message) => ({
+      id: message.id,
+      role: message.role,
+      content: message.parts.map((part) => part.type === 'text' ? part.text : '').join(''),
+    })),
+  [messages]);
 
   if (error) {
     return (
@@ -61,55 +108,40 @@ const HomePage = () => {
   }
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(250)}
-      className="flex-1 bg-white dark:bg-black"
-      style={{ paddingBottom: bottom }}
-    >
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: "hey",
-
-          headerRight: () => (
-            <Pressable disabled={!messages.length} onPress={() => {}}>
-              <Text style={{ fontSize: 20, opacity: !messages.length ? 0.3 : 1 }}>+</Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <ScrollView
-        className="container relative mx-auto flex-1 bg-white dark:bg-black"
-        ref={scrollViewRef}
+    <ElevenLabsProvider>
+      <Animated.View
+        entering={FadeIn.duration(250)}
+        className="flex-1 bg-white dark:bg-black"
+        style={{ paddingBottom: bottom }}
       >
-        <ChatInterface
-          messages={messages.map((message) => ({
-            id: message.id,
-            role: message.role,
-            content: message.parts.map((part) => part.type === 'text' ? part.text : '').join(''),
-          }))}
+        <ScrollView
+          className="container relative mx-auto flex-1 bg-white dark:bg-black"
+          ref={scrollViewRef}
+        >
+          <ChatInterface
+            messages={transformedMessages}
+            scrollViewRef={scrollViewRef}
+            isLoading={false}
+          />
+        </ScrollView>
+
+
+        <ChatInput
+          ref={inputRef}
           scrollViewRef={scrollViewRef}
-          isLoading={false}
+          input={input}
+          onChangeText={setInput}
+          focusOnMount={false}
+          onVoicePress={handleVoicePress}
+          onSubmit={handleSubmit}
         />
-      </ScrollView>
 
-
-      <ChatInput
-        ref={inputRef}
-        scrollViewRef={scrollViewRef}
-        input={input}
-        onChangeText={setInput}
-        focusOnMount={false}
-        onSubmit={() => {
-          if (input.trim()) {
-            setBottomChatHeightHandler(true);
-            sendMessage({ text: input });
-            setInput('');
-            clearImageUris();
-          }
-        }}
-      />
-    </Animated.View>
+        <VoiceModal
+          visible={isVoiceModalVisible}
+          onClose={handleVoiceClose}
+        />
+      </Animated.View>
+    </ElevenLabsProvider>
   );
 };
 

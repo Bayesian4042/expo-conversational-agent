@@ -25,6 +25,55 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Building for iOS with Native Components
+
+This app includes native components that require a development build. You cannot use Expo Go for this project.
+
+### Prerequisites
+
+- macOS with Xcode installed
+- CocoaPods installed (`sudo gem install cocoapods`)
+- iOS Simulator or physical iOS device
+
+### Build and Run on iOS
+
+1. **Prebuild iOS native project** (if not already done):
+
+   ```bash
+   pnpx expo prebuild --platform ios
+   ```
+
+2. **Install iOS dependencies**:
+
+   ```bash
+   cd ios
+   pod install
+   cd ..
+   ```
+
+3. **Run on iOS**:
+
+   ```bash
+   pnpx expo run:ios
+   ```
+
+   Or specify a device:
+
+   ```bash
+   pnpx expo run:ios --device
+   ```
+
+### Using EAS Build (Alternative)
+
+For cloud-based builds, you can use EAS Build:
+
+```bash
+pnpm install -g eas-cli
+eas build --platform ios --profile development
+```
+
+After the build completes, install it on your device using the provided QR code or download link.
+
 ## Get a fresh project
 
 When you're ready, run:

@@ -1,20 +1,55 @@
-# Expo AI Chatbot Lite
+# Expo AI Conversational Agent
 
-ℹ️ This is a lite version of Expo AI Chatbot. It is a simplified version of the pro chatbot that is designed to be ready to use for commercial apps. It has Authentication, Suggested Actions / Tooling, Image Attachments, History drawer, Markdown support, new chat navigation, and best of all Next.js AI Chatbot Compatible. 
+A cross-platform mobile app featuring **text and voice conversations** powered by [Vercel AI SDK](https://sdk.vercel.ai/), built with React Native and Expo SDK 54.x.
 
-**Go get the pro version here** → [expoaichatbot.com](https://www.expoaichatbot.com)
+## Features
 
+- **Text & Voice Conversations** - Seamless text and voice-based interactions with AI
+- **React Native Reusable UI** - Modern, reusable components built with NativeWind/Tailwind CSS
+- **Vercel AI SDK Integration** - Streaming responses and real-time AI interactions
+- **Cross-Platform** - Works on iOS, Android, and Web
+- **Suggested Actions** - Context-aware action suggestions
+- **Image Attachments** - Send images in conversations
+- **Markdown Support** - Rich text formatting in messages
+- **NestJS Backend** - Robust server with AI agent endpoints
 
----
-## Chat SDK  reference codebase (use above version 1.0 of Expo AI Chatbot)
+## Getting Started
 
-Reference nextjs-ai-chatbot [README.md](./ai-chatbot/README.md)
+### Prerequisites
 
-## Next.js AI Chatbot reference codebase (use below version 1.0 of Expo AI Chatbot)
+- Node.js 18+
+- pnpm (package manager)
+- Expo CLI
 
-Reference nextjs-ai-chatbot [README.md](./nextjs-ai-chatbot/README.md)
+### Installation
 
-## Expo AI Chatbot setup
+1. **Install dependencies**
 
-Reference expo-ai-chatbot [README.md](./expo-ai-chatbot/README.md)
+```bash
+cd app
+pnpm install
+```
+
+2. **Start the Expo app**
+
+```bash
+pnpx expo start
+```
+
+3. **Run the server** (in a separate terminal)
+
+```bash
+cd server
+pnpm install
+pnpm run start:dev
+```
+
+## Project Structure
+
+- `/app` - Expo React Native application
+- `/server` - NestJS backend with AI agent services
+
+For more details, see:
+- [Expo App README](./app/README.md)
+- [Server README](./server/README.md)
 

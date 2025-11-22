@@ -1,6 +1,5 @@
-import { generateUUID } from "@/lib/utils";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { type TextInput, ScrollView, Text } from "react-native";
+import { useRef, useState, useCallback, useMemo } from "react";
+import { type TextInput, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetch as expoFetch } from 'expo/fetch';
 import { useChat } from "@ai-sdk/react";
@@ -14,71 +13,23 @@ import { ElevenLabsProvider } from "@elevenlabs/react-native";
 import { VoiceModal } from "@/components/voice-modal";
 
 const HomePage = () => {
-  const {
-    clearImageUris,
-    chatId,
-    setChatId,
-  } = useStore();
   const inputRef = useRef<TextInput>(null);
   const [input, setInput] = useState('');
   const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(false);
   const scrollViewRef = useRef<GHScrollView>(null);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { bottom } = useSafeAreaInsets();
-
-  useEffect(() => {
-    if (!chatId) {
-      setChatId({ id: generateUUID(), from: "newChat" });
-    }
-  }, [chatId, setChatId]);
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const transport = useMemo(() => new DefaultChatTransport({
-    fetch: expoFetch as unknown as typeof globalThis.fetch,
-    api: `http://localhost:3001/api/text-agent/`,
-  }), []);
-
-  const handleFinish = useCallback(() => {
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-    scrollTimeoutRef.current = setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-      scrollTimeoutRef.current = null;
-    }, 100);
-  }, []);
-
-  const handleError = useCallback((error: Error) => {
-    console.log(">> error is", error.message);
-  }, []);
 
   const {
     messages,
     error,
-    sendMessage
+    sendMessage,
   } = useChat({
-    transport,
-    onFinish: handleFinish,
-    onError: handleError,
+    transport: new DefaultChatTransport({
+      fetch: expoFetch as unknown as typeof globalThis.fetch,
+      api: `http://localhost:3001/api/text-agent/`,
+    }),
   });
 
-  const handleSubmit = useCallback(() => {
-    if (input.trim()) {
-      sendMessage({ text: input });
-      setInput('');
-      clearImageUris();
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [input, sendMessage, clearImageUris]);
 
   const handleVoicePress = useCallback(() => {
     setIsVoiceModalVisible(true);
@@ -108,23 +59,17 @@ const HomePage = () => {
   }
 
   return (
-    <ElevenLabsProvider>
+    // <ElevenLabsProvider>
       <Animated.View
         entering={FadeIn.duration(250)}
         className="flex-1 bg-white dark:bg-black"
         style={{ paddingBottom: bottom }}
       >
-        <ScrollView
-          className="container relative mx-auto flex-1 bg-white dark:bg-black"
-          ref={scrollViewRef}
-        >
-          <ChatInterface
-            messages={transformedMessages}
-            scrollViewRef={scrollViewRef}
-            isLoading={false}
-          />
-        </ScrollView>
-
+        <ChatInterface
+          messages={transformedMessages}
+          scrollViewRef={scrollViewRef}
+          isLoading={false}
+        />
 
         <ChatInput
           ref={inputRef}
@@ -133,15 +78,15 @@ const HomePage = () => {
           onChangeText={setInput}
           focusOnMount={false}
           onVoicePress={handleVoicePress}
-          onSubmit={handleSubmit}
+          onSubmit={() => sendMessage({ text: input })}
         />
 
-        <VoiceModal
+        {/* <VoiceModal
           visible={isVoiceModalVisible}
           onClose={handleVoiceClose}
-        />
+        /> */}
       </Animated.View>
-    </ElevenLabsProvider>
+    // </ElevenLabsProvider>r
   );
 };
 

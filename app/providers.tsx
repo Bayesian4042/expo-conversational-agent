@@ -3,7 +3,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ColorSchemeProvider } from "@/design-system/color-scheme/provider";
 import { Toaster } from "@/components/sonner";
 import NativewindThemeProvider from "./ThemeProvider";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +10,7 @@ function Providers({ children }: { children: React.ReactNode }) {
       <ColorSchemeProvider>
         <Toaster />
         <NativewindThemeProvider>
-          <BottomSheetModalProvider>{children}</BottomSheetModalProvider>
+          {children}
         </NativewindThemeProvider>
       </ColorSchemeProvider>
     </GestureHandlerRootView>

@@ -44,7 +44,7 @@ export const ScrollAdapt = forwardRef<ScrollAdaptRef, ScrollAdaptProps>(
     return (
       <ScrollView
         ref={scrollViewRef}
-        className="max-h-[120] bg-white pl-3 dark:bg-black"
+        className="max-h-[120] bg-background pl-3"
         horizontal
         decelerationRate="fast"
         showsHorizontalScrollIndicator={false}

@@ -77,7 +77,7 @@ const rules = {
   link: (node, children) => (
     <A
       key={node.key}
-      className="text-blue-500 hover:underline"
+      className="text-primary hover:underline"
       target="_blank"
       rel="noreferrer"
       href={node.attributes.href}

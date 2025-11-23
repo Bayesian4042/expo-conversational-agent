@@ -89,7 +89,7 @@ export function SuggestedActions({
             <View
               onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
               className={cn(
-                "mb-3 mr-2.5 h-32 w-[280px] rounded-lg border border-gray-200 bg-white p-4 dark:bg-black",
+                "mb-3 mr-2.5 h-32 w-[280px] rounded-lg border border-border bg-card p-4",
               )}
               style={{
                 //   borderWidth: StyleSheet.hairlineWidth,
@@ -100,7 +100,7 @@ export function SuggestedActions({
               }}
             >
               <Text className="text-lg font-semibold">{item.title}</Text>
-              <Text className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="mt-2 text-sm text-muted-foreground">
                 {item.label}
               </Text>
             </View>

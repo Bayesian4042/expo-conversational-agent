@@ -130,18 +130,18 @@ export const VoiceModal = ({ visible, onClose }: VoiceModalProps) => {
       <Animated.View 
         entering={SlideInDown.springify().damping(20).stiffness(90)}
         exiting={SlideOutDown.duration(200)}
-        className="flex-1 bg-white dark:bg-black"
+        className="flex-1 bg-background"
         style={{ paddingTop: top }}
       >
         <View className="flex-row justify-end px-6 py-4 gap-4">
           <Pressable className="h-10 w-10 items-center justify-center">
-            <Text className="text-gray-500 text-lg">CC</Text>
+            <Text className="text-muted-foreground text-lg">CC</Text>
           </Pressable>
           <Pressable className="h-10 w-10 items-center justify-center">
-            <Text className="text-gray-500 text-2xl">↑</Text>
+            <Text className="text-muted-foreground text-2xl">↑</Text>
           </Pressable>
           <Pressable className="h-10 w-10 items-center justify-center">
-            <Text className="text-gray-500 text-2xl">⚙</Text>
+            <Text className="text-muted-foreground text-2xl">⚙</Text>
           </Pressable>
         </View>
 
@@ -164,7 +164,7 @@ export const VoiceModal = ({ visible, onClose }: VoiceModalProps) => {
                 />
               </Animated.View>
               {/* Status Text */}
-              <Text className="text-center text-lg mt-8 text-gray-700 dark:text-gray-300">
+              <Text className="text-center text-lg mt-8 text-foreground">
                 {conversation.isSpeaking
                   ? "AI is speaking..."
                   : isMicMuted 
@@ -177,9 +177,9 @@ export const VoiceModal = ({ visible, onClose }: VoiceModalProps) => {
                 <Animated.View
                   entering={FadeIn.duration(150)}
                   exiting={FadeOut.duration(150)}
-                  className="mt-4 bg-green-500 px-4 py-2 rounded-full"
+                  className="mt-4 bg-primary px-4 py-2 rounded-full"
                 >
-                  <Text className="text-white font-semibold">🎤 Voice Detected!</Text>
+                  <Text className="text-primary-foreground font-semibold">🎤 Voice Detected!</Text>
                 </Animated.View>
               )}
             </>
@@ -200,7 +200,7 @@ export const VoiceModal = ({ visible, onClose }: VoiceModalProps) => {
                   style={{ width: 280, height: 280, opacity: 0.5 }}
                 />
               </View>
-              <Text className="text-center text-lg mt-6 text-gray-600 dark:text-gray-400">
+              <Text className="text-center text-lg mt-6 text-muted-foreground">
                 Connecting...
               </Text>
             </Animated.View>
@@ -211,10 +211,10 @@ export const VoiceModal = ({ visible, onClose }: VoiceModalProps) => {
               entering={FadeIn.duration(300)}
               className="items-center justify-center"
             >
-              <View className="w-[280px] h-[280px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+              <View className="w-[280px] h-[280px] items-center justify-center rounded-full bg-muted">
                 <Mic size={80} color="#999" />
               </View>
-              <Text className="text-center text-lg mt-6 text-gray-600 dark:text-gray-400">
+              <Text className="text-center text-lg mt-6 text-muted-foreground">
                 Disconnected
               </Text>
             </Animated.View>

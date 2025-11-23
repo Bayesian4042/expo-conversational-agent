@@ -15,7 +15,7 @@ const HomePage = () => {
   const [input, setInput] = useState('');
   const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(false);
   const scrollViewRef = useRef<GHScrollView>(null);
-  const { bottom } = useSafeAreaInsets();
+  const { bottom, top } = useSafeAreaInsets();
 
   const {
     messages,
@@ -27,6 +27,17 @@ const HomePage = () => {
       api: `http://localhost:3001/api/text-agent/`,
     }),
   });
+
+  const onTextSubmit = () => {
+    sendMessage({ text: input })
+      .then(() => {
+        setInput('');
+      })
+      .catch((error) => {
+        console.error('Error sending message:', error);
+      });
+    setInput('');
+  }
 
 
   const handleVoicePress = useCallback(() => {
@@ -49,9 +60,9 @@ const HomePage = () => {
     return (
       <Animated.View
         entering={FadeIn.duration(250)}
-        className="flex-1 items-center justify-center bg-white dark:bg-black p-4"
+        className="flex-1 items-center justify-center bg-background p-4"
       >
-        <Text className="text-red-500 text-center">Error: {error.message}</Text>
+        <Text className="text-destructive text-center">Error: {error.message}</Text>
       </Animated.View>
     );
   }
@@ -59,8 +70,8 @@ const HomePage = () => {
   return (
       <Animated.View
         entering={FadeIn.duration(250)}
-        className="flex-1 bg-white dark:bg-black"
-        style={{ paddingBottom: bottom }}
+        className="flex-1 bg-background"
+        style={{ paddingBottom: bottom, paddingTop: top}}
       >
         <ChatInterface
           messages={transformedMessages}
@@ -75,7 +86,7 @@ const HomePage = () => {
           onChangeText={setInput}
           focusOnMount={false}
           onVoicePress={handleVoicePress}
-          onSubmit={() => sendMessage({ text: input })}
+          onSubmit={onTextSubmit}
         />
 
         <VoiceModal

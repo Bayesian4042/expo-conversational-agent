@@ -205,8 +205,8 @@ const ChatInputComponent = forwardRef<TextInput, Props>(
               disabled={!input.trim()}
               className={`android:h-12 android:w-12 h-10 w-10 rounded-full items-center justify-center active:opacity-80 ${
                 input.trim() 
-                  ? 'bg-black dark:bg-white' 
-                  : 'bg-gray-300 dark:bg-gray-600 opacity-50'
+                  ? 'bg-foreground' 
+                  : 'bg-muted opacity-50'
               }`}
             >
               <ArrowUp

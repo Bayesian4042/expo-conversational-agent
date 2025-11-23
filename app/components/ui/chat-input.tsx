@@ -149,14 +149,9 @@ const ChatInputComponent = forwardRef<TextInput, Props>(
         scrollViewRef.current?.scrollToEnd({ animated: true });
       });
 
-      // const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-      //   scrollViewRef.current?.scrollToEnd({ animated: true });
-      // });
-
       return () => {
         showSubscription.remove();
         focusSubscription.remove();
-        // hideSubscription.remove();
       };
     }, [scrollViewRef]);
 

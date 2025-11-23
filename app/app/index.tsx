@@ -4,12 +4,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetch as expoFetch } from 'expo/fetch';
 import { useChat } from "@ai-sdk/react";
 import type { ScrollView as GHScrollView } from "react-native-gesture-handler";
-import { useStore } from "@/lib/globalStore";
 import { DefaultChatTransport } from 'ai';
 import Animated, { FadeIn } from "react-native-reanimated";
 import { ChatInterface } from "@/components/chat-interface";
 import { ChatInput } from "@/components/ui/chat-input";
-import { ElevenLabsProvider } from "@elevenlabs/react-native";
 import { VoiceModal } from "@/components/voice-modal";
 
 const HomePage = () => {
@@ -59,7 +57,6 @@ const HomePage = () => {
   }
 
   return (
-    // <ElevenLabsProvider>
       <Animated.View
         entering={FadeIn.duration(250)}
         className="flex-1 bg-white dark:bg-black"
@@ -81,12 +78,11 @@ const HomePage = () => {
           onSubmit={() => sendMessage({ text: input })}
         />
 
-        {/* <VoiceModal
+        <VoiceModal
           visible={isVoiceModalVisible}
           onClose={handleVoiceClose}
-        /> */}
+        />
       </Animated.View>
-    // </ElevenLabsProvider>r
   );
 };
 

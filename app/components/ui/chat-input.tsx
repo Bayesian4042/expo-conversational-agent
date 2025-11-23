@@ -63,7 +63,7 @@ const ImageItemComponent = ({ uri, onRemove }: ImageItemProps) => {
     >
       <View className="relative">
         {isLoading && (
-          <Animated.View className="absolute h-[55px] w-[55px] items-center justify-center rounded-md bg-gray-300 dark:bg-gray-600">
+          <Animated.View className="absolute h-[55px] w-[55px] items-center justify-center rounded-md bg-muted">
             <ActivityIndicator size="small" color="white" />
           </Animated.View>
         )}
@@ -80,7 +80,7 @@ const ImageItemComponent = ({ uri, onRemove }: ImageItemProps) => {
       </View>
       <Pressable
         onPress={handleRemove}
-        className="absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full bg-gray-200"
+        className="absolute -right-2 -top-2 h-5 w-5 items-center justify-center rounded-full bg-secondary"
       >
         <X size={12} color="black" />
       </Pressable>
@@ -189,17 +189,6 @@ const ChatInputComponent = forwardRef<TextInput, Props>(
               value={input}
               onChangeText={onChangeText}
             />
-            {onVoicePress && (
-              <Pressable
-                onPress={handleVoicePressInternal}
-                className="android:h-12 android:w-12 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center active:opacity-70"
-              >
-                <Mic
-                  color={colorScheme === "dark" ? "white" : "black"}
-                  size={20}
-                />
-              </Pressable>
-            )}
             <Pressable
               onPress={handleSubmitInternal}
               disabled={!input.trim()}
@@ -214,6 +203,18 @@ const ChatInputComponent = forwardRef<TextInput, Props>(
                 size={20}
               />
             </Pressable>
+
+            {onVoicePress && (
+              <Pressable
+                onPress={handleVoicePressInternal}
+                className="android:h-12 android:w-12 h-10 w-10 rounded-full bg-secondary items-center justify-center active:opacity-70"
+              >
+                <Mic
+                  color={colorScheme === "dark" ? "white" : "black"}
+                  size={20}
+                />
+              </Pressable>
+            )}
           </View>
         </Animated.View>
       </KeyboardAvoidingView>

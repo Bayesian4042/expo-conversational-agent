@@ -45,14 +45,14 @@ const ChatInterfaceComponent = forwardRef<ScrollView, ChatInterfaceProps>(
         >
           {!messages.length && <WelcomeMessage />}
           {messages.length > 0
-            ? messages.map((m, index) => (
-                <React.Fragment key={m.id}>
-                  {m.toolInvocations?.map((t) => {
+            ? messages.map((m, index) => {
+                const toolInvocationElements = m.toolInvocations
+                  ?.map((t, toolIndex) => {
                     if (t.toolName === "getWeather") {
                       if (t.state !== "result") {
                         return (
                           <View
-                            key={t.toolCallId}
+                            key={`${m.id}-tool-${t.toolCallId}-${toolIndex}-loading`}
                             className={cn(
                               "mt-4 max-w-[85%] rounded-2xl bg-muted/50 p-4",
                             )}
@@ -65,7 +65,7 @@ const ChatInterfaceComponent = forwardRef<ScrollView, ChatInterfaceProps>(
                       if (t.state === "result") {
                         return (
                           <WeatherCard
-                            key={t.toolCallId}
+                            key={`${m.id}-tool-${t.toolCallId}-${toolIndex}-result`}
                             city={t.result.city || "Unknown"}
                             temperature={t.result.current.temperature_2m}
                             weatherCode={t.result.current.weathercode}
@@ -76,14 +76,21 @@ const ChatInterfaceComponent = forwardRef<ScrollView, ChatInterfaceProps>(
                       }
                     }
                     return null;
-                  })}
+                  })
+                  .filter(Boolean) || [];
+
+                return (
+                <React.Fragment key={`message-${m.id}-${index}`}>
+                  {toolInvocationElements}
 
                   <View
+                    key={`content-${m.id}`}
                     className={`flex-row px-4 ${m.role === "user" ? "ml-auto max-w-[85%]" : "max-w-[95%] pl-0"} rounded-3xl ${m.role === "user" ? "bg-muted/50" : ""} `}
                   >
                     {m.content.length > 0 && (
-                      <>
+                      <React.Fragment key={`${m.id}-content-wrapper`}>
                         <View
+                          key={`${m.id}-avatar`}
                           className={
                             m.role === "user"
                               ? ""
@@ -94,14 +101,14 @@ const ChatInterfaceComponent = forwardRef<ScrollView, ChatInterfaceProps>(
                             {m.role === "user" ? "" : "🤖"}
                           </Text>
                         </View>
-                        <CustomMarkdown content={m.content} />
-                      </>
+                        <CustomMarkdown key={`${m.id}-markdown`} content={m.content} />
+                      </React.Fragment>
                     )}
                   </View>
                   {isLoading &&
                     messages[messages.length - 1].role === "user" &&
                     m === messages[messages.length - 1] && (
-                      <View className="flex-row">
+                      <View key={`loading-${m.id}`} className="flex-row">
                         <View
                           className={
                             "mr-2 mt-1 h-8 w-8 items-center justify-center rounded-full bg-gray-200"
@@ -115,7 +122,8 @@ const ChatInterfaceComponent = forwardRef<ScrollView, ChatInterfaceProps>(
                       </View>
                     )}
                 </React.Fragment>
-              ))
+                );
+              })
             : null}
         </ScrollView>
       </View>

@@ -36,7 +36,7 @@ export class TextAgentController {
           model: openai('gpt-4o'),
           prompt: 'Invent a new holiday and describe its traditions.',
         });
-        
+
         writer.merge(
           result.toUIMessageStream({
             sendStart: false,
@@ -49,7 +49,7 @@ export class TextAgentController {
         );
       },
     });
-    
+
     pipeUIMessageStreamToResponse({ stream, response });
   }
 }

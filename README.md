@@ -2,6 +2,13 @@
 
 A cross-platform mobile app featuring **text and voice conversations** powered by [Vercel AI SDK](https://sdk.vercel.ai/), built with React Native and Expo SDK 54.x.
 
+## Screenshots
+
+<div style="display: flex; gap: 20px; justify-content: center;">
+  <img src="./app/assets/screenshots/chat_interface.png" alt="Chat Interface" width="300" />
+  <img src="./app/assets/screenshots/voice_interface.png" alt="Voice Listening" width="300" />
+</div>
+
 ## Features
 
 - **Text & Voice Conversations** - Seamless text and voice-based interactions with AI

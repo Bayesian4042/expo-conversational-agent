@@ -194,14 +194,15 @@ const ChatInputComponent = forwardRef<TextInput, Props>(
               disabled={!input.trim()}
               className={`android:h-12 android:w-12 h-10 w-10 rounded-full items-center justify-center active:opacity-80 ${
                 input.trim() 
-                  ? 'bg-foreground' 
+                  ? 'bg-primary/20r' 
                   : 'bg-muted opacity-50'
               }`}
             >
-              <ArrowUp
-                color={colorScheme === "dark" ? "black" : "white"}
-                size={20}
-              />
+            <ArrowUp
+              className="text-background"
+              color={colorScheme === "dark" ? "white" : "black"}
+              size={20}
+            />
             </Pressable>
 
             {onVoicePress && (

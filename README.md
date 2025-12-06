@@ -37,10 +37,10 @@ cd app
 pnpm install
 ```
 
-2. **Start the Expo app**
+2. **Start the Expo app on IOS native**
 
 ```bash
-pnpx expo start
+pnpm run ios
 ```
 
 3. **Run the server** (in a separate terminal)

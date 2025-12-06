@@ -1,254 +1,274 @@
-import React, { useState, useRef } from "react";
-import {
-  View,
-  Modal,
-  Pressable,
-  useColorScheme,
-} from "react-native";
-import { X, Mic, MicOff } from "lucide-react-native";
-import { useConversation } from "@elevenlabs/react-native";
-import type { ConversationStatus, Role } from "@elevenlabs/react-native";
+import React, { useState, useEffect } from "react";
+import { View, Modal, Pressable, Alert } from "react-native";
+import { X } from "lucide-react-native";
 import { Text } from "@/components/ui/text";
-import LottieView from "lottie-react-native";
-import Animated, { 
-  FadeIn, 
-  FadeOut, 
-  SlideInDown, 
-  SlideOutDown,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAudioPlayer, setAudioModeAsync, AudioModule } from "expo-audio";
+import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
+import GemaVoice from "./common/gema-voice";
 
-interface VoiceModalProps {
+interface VoiceModalSimpleProps {
   visible: boolean;
   onClose: () => void;
 }
 
-export const VoiceModal = ({ visible, onClose }: VoiceModalProps) => {
-  const [isStarting, setIsStarting] = useState(false);
-  const [isMicMuted, setIsMicMuted] = useState(false);
-  const [isVoiceDetected, setIsVoiceDetected] = useState(false);
-  const colorScheme = useColorScheme();
-  const { top, bottom } = useSafeAreaInsets();
-  const lottieRef = useRef<LottieView>(null);
+export const VoiceModalSimple = ({ 
+  visible, 
+  onClose,
+}: VoiceModalSimpleProps) => {
+  const [status, setStatus] = useState<"idle" | "listening" | "processing" | "speaking">("idle");
+  const [transcript, setTranscript] = useState("");
+  const [response, setResponse] = useState("");
+  
+  const lastProcessedRef = React.useRef<string>("");
+  const lastTranscriptRef = React.useRef<string>("");
+  const silenceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioPlayer = useAudioPlayer();
+  const { state: voiceState, startRecognizing, stopRecognizing, destroyRecognizer } = useVoiceRecognition();
 
-  const conversation = useConversation({
-    onConnect: ({ conversationId }: { conversationId: string }) => {
-      console.log("Connected to conversation", conversationId);
-      setIsStarting(false);
-    },
-    onDisconnect: (details) => {
-      console.log("Disconnected from conversation", details);
-      setIsMicMuted(false);
-    },
-    onError: (message: string, context?: Record<string, unknown>) => {
-      console.error("Conversation error:", message, context);
-      setIsStarting(false);
-    },
-    onMessage: ({
-      message,
-      source,
-    }: {
-      message: string;
-      source: Role;
-    }) => {
-      console.log(`Message from ${source}:`, message);
-    },
-    onModeChange: ({ mode }: { mode: "speaking" | "listening" }) => {
-      console.log(`Mode: ${mode}`);
-    },
-    onStatusChange: ({ status }: { status: ConversationStatus }) => {
-      console.log(`Status: ${status}`);
-    },
-    onCanSendFeedbackChange: ({
-      canSendFeedback,
-    }: {
-      canSendFeedback: boolean;
-    }) => {
-      console.log(`Can send feedback: ${canSendFeedback}`);
-    },
-    onVadScore: ({ vadScore }: { vadScore: number }) => {
-      const voiceActive = vadScore > 0.5;
-      if (voiceActive !== isVoiceDetected) {
-        setIsVoiceDetected(voiceActive);
-        if (voiceActive) {
-          console.log(`Voice detected! VAD Score: ${vadScore}`);
-        }
+  const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const setup = async () => {
+      const result = await AudioModule.requestRecordingPermissionsAsync();
+      if (!result.granted) {
+        Alert.alert("Permission Required", "Microphone permission is required");
+        onClose();
+        return;
       }
-    },
-    onDebug: (data) => {
-      console.log("Debug:", data);
-    },
-  });
 
-  const startConversation = async () => {
-    if (conversation.status !== "disconnected" || isStarting) return;
-    
-    setIsStarting(true);
-    try {
-      await conversation.startSession({
-        agentId: process.env.EXPO_PUBLIC_AGENT_ID,
-        userId: "demo-user",
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
       });
+
+      setStatus("listening");
+      await startRecognizing();
+    };
+
+    setup();
+
+    return () => {
+      console.log('🧹 Modal closing or unmounting, cleaning up...');
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      stopRecognizing().catch(console.error);
+      destroyRecognizer().catch(console.error);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  useEffect(() => {
+    if (status !== "listening") {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      return;
+    }
+
+    const currentTranscript = voiceState.partialResults[0] || voiceState.results[0] || "";
+    
+    if (!currentTranscript || currentTranscript.trim().length === 0) {
+      lastTranscriptRef.current = "";
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (currentTranscript !== lastTranscriptRef.current) {
+      lastTranscriptRef.current = currentTranscript;
+      
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+      
+      silenceTimerRef.current = setTimeout(() => {
+        
+        if (lastProcessedRef.current === currentTranscript) {
+          return;
+        }
+        
+        lastProcessedRef.current = currentTranscript;
+        handleTranscript(currentTranscript);
+      }, 2000);
+    }
+
+    return () => {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceState.partialResults, voiceState.results, status]);
+
+  const handleTranscript = async (text: string) => {
+    setTranscript(text);
+    setStatus("processing");
+    await stopRecognizing();
+
+    try {
+        const response = await fetch(`${API_URL}/voice-agent/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error:', errorText);
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        setResponse(data.text);
+        setStatus("speaking");
+
+        const audioData = `data:audio/mp3;base64,${data.audio}`;
+        audioPlayer.replace(audioData);
+        await audioPlayer.play();
+
+        await new Promise<void>((resolve) => {
+          const checkPlayback = setInterval(() => {
+            if (!audioPlayer.playing) {
+              clearInterval(checkPlayback);
+              resolve();
+            }
+          }, 100);
+        });
+
+        setTranscript("");
+        setResponse("");
+
+        lastProcessedRef.current = "";
+        lastTranscriptRef.current = "";
+
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+
+        setStatus("listening");
+        await startRecognizing();
+
     } catch (error) {
-      console.error("Failed to start conversation:", error);
-      alert(`Failed to start voice conversation: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setIsStarting(false);
-      onClose();
+        console.error('Error:', error);
+        Alert.alert("Error", "Failed to process request");
+        lastProcessedRef.current = "";
+        lastTranscriptRef.current = "";
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+        setStatus("listening");
+        await startRecognizing();
     }
   };
 
   const handleClose = async () => {
     try {
-      if (conversation.status === "connected" || conversation.status === "connecting") {
-        console.log("Ending conversation session...");
-        await conversation.endSession();
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
       }
+
+      try {
+        await stopRecognizing();
+      } catch (error) {
+        console.log('Voice recognition already stopped or error:', error);
+      }
+
+      try {
+        await destroyRecognizer();
+      } catch (error) {
+        console.error('Error destroying recognizer:', error);
+      }
+
+      if (audioPlayer.playing) {
+        audioPlayer.pause();
+      }
+
+      lastProcessedRef.current = "";
+      lastTranscriptRef.current = "";
+      setStatus("idle");
+      setTranscript("");
+      setResponse("");
+      
     } catch (error) {
-      console.error("Error ending conversation:", error);
+      console.error('Error during cleanup:', error);
     } finally {
-      setIsMicMuted(false);
-      setIsStarting(false);
       onClose();
     }
   };
 
-  const toggleMicMute = () => {
-    const newMutedState = !isMicMuted;
-    setIsMicMuted(newMutedState);
-    conversation.setMicMuted(newMutedState);
+  const getStatusText = () => {
+    switch (status) {
+      case "listening": return "Listening...";
+      case "processing": return "Thinking...";
+      case "speaking": return "Speaking...";
+      default: return "Ready";
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case "listening": return "text-green-500";
+      case "processing": return "text-yellow-500";
+      case "speaking": return "text-blue-500";
+      default: return "text-muted-foreground";
+    }
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="none"
-      transparent={false}
-      onShow={startConversation}
-      onRequestClose={handleClose}
-      statusBarTranslucent
-    >
-      <Animated.View 
-        entering={SlideInDown.springify().damping(20).stiffness(90)}
-        exiting={SlideOutDown.duration(200)}
-        className="flex-1 bg-background"
-        style={{ paddingTop: top }}
-      >
-        <View className="flex-row justify-end px-6 py-4 gap-4">
-          <Pressable className="h-10 w-10 items-center justify-center">
-            <Text className="text-muted-foreground text-lg">CC</Text>
-          </Pressable>
-          <Pressable className="h-10 w-10 items-center justify-center">
-            <Text className="text-muted-foreground text-2xl">↑</Text>
-          </Pressable>
-          <Pressable className="h-10 w-10 items-center justify-center">
-            <Text className="text-muted-foreground text-2xl">⚙</Text>
+    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <View className="flex-1 bg-background">
+        {/* Header */}
+        <View className="flex-row justify-between items-center px-6 py-4 pt-12">
+          <Text className="text-xl font-semibold">Voice Chat</Text>
+          <Pressable onPress={handleClose} className="p-2">
+            <X size={24} />
           </Pressable>
         </View>
 
-        <View className="flex-1 items-center justify-center">
-          {conversation.status === "connected" && (
-            <>
-              <Animated.View
-                entering={FadeIn.duration(300)}
-                exiting={FadeOut.duration(300)}
-                style={{ width: 320, height: 320 }}
-              >
-                <LottieView
-                  ref={lottieRef}
-                  source={{
-                    uri: "https://lottie.host/7c55a554-ea34-4a37-aac1-ca6759541f4f/9xtxucyk4B.lottie",
-                  }}
-                  autoPlay
-                  loop
-                  style={{ width: "100%", height: "100%" }}
-                />
-              </Animated.View>
-              {/* Status Text */}
-              <Text className="text-center text-lg mt-8 text-foreground">
-                {conversation.isSpeaking
-                  ? "AI is speaking..."
-                  : isMicMuted 
-                  ? "Microphone muted"
-                  : "Listening for your voice..."}
+        {/* Content */}
+        <View className="flex-1 items-center justify-center px-6">
+          <GemaVoice width={300} height={300} />
+
+          <Text className={`text-lg font-semibold mt-6 ${getStatusColor()}`}>
+            {getStatusText()}
               </Text>
               
-              {/* Voice Detection Indicator */}
-              {isVoiceDetected && !isMicMuted && (
-                <Animated.View
-                  entering={FadeIn.duration(150)}
-                  exiting={FadeOut.duration(150)}
-                  className="mt-4 bg-primary px-4 py-2 rounded-full"
-                >
-                  <Text className="text-primary-foreground font-semibold">🎤 Voice Detected!</Text>
-                </Animated.View>
-              )}
-            </>
+          {transcript && (
+            <View className="mt-6 bg-secondary px-6 py-4 rounded-2xl">
+              <Text className="text-foreground">{transcript}</Text>
+            </View>
           )}
 
-          {conversation.status === "connecting" && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              className="items-center justify-center"
-            >
-              <View className="w-[280px] h-[280px] items-center justify-center">
-                <LottieView
-                  source={{
-                    uri: "https://lottie.host/7c55a554-ea34-4a37-aac1-ca6759541f4f/9xtxucyk4B.lottie",
-                  }}
-                  autoPlay
-                  loop
-                  style={{ width: 280, height: 280, opacity: 0.5 }}
-                />
+          {response && (
+            <View className="mt-4 bg-primary/10 px-6 py-4 rounded-2xl">
+              <Text className="text-foreground">{response}</Text>
               </View>
-              <Text className="text-center text-lg mt-6 text-muted-foreground">
-                Connecting...
-              </Text>
-            </Animated.View>
           )}
 
-          {conversation.status === "disconnected" && !isStarting && (
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              className="items-center justify-center"
-            >
-              <View className="w-[280px] h-[280px] items-center justify-center rounded-full bg-muted">
-                <Mic size={80} color="#999" />
+          <View className="mt-8 bg-secondary px-6 py-3 rounded-full">
+            <Text className="text-sm text-muted-foreground">
+              {status === "listening" && "Start speaking..."}
+              {status === "processing" && "Processing..."}
+              {status === "speaking" && "Listen to response..."}
+            </Text>
               </View>
-              <Text className="text-center text-lg mt-6 text-muted-foreground">
-                Disconnected
-              </Text>
-            </Animated.View>
-          )}
         </View>
-
-        {/* Bottom Controls */}
-        <View 
-          className="flex-row items-center justify-between px-8"
-          style={{ paddingBottom: Math.max(bottom, 32) }}
-        >
-          {/* Microphone Button */}
-          <Pressable
-            onPress={toggleMicMute}
-            className="h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-            disabled={conversation.status !== "connected"}
-          >
-            {isMicMuted ? (
-              <MicOff size={28} color={colorScheme === "dark" ? "white" : "black"} />
-            ) : (
-              <Mic size={28} color={colorScheme === "dark" ? "white" : "black"} />
-            )}
-          </Pressable>
-
-          {/* Close Button */}
-          <Pressable
-            onPress={handleClose}
-            className="h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-          >
-            <X size={28} color={colorScheme === "dark" ? "white" : "black"} />
-          </Pressable>
         </View>
-      </Animated.View>
     </Modal>
   );
 };
 
+export const VoiceModal = VoiceModalSimple;

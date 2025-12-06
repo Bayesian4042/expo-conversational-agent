@@ -28,3 +28,4 @@ const GemaVoice = ({ width = 300, height = 300 }: GemaVoiceProps) => {
 export default GemaVoice;
 
 
+
